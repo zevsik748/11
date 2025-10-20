@@ -19,9 +19,22 @@ export async function telegramWebhook(req, env) {
     }
 
     if (/^\/start/i.test(text)) {
-      const suggestions = getSuggestions(8).slice(0,8);
-      const msg = "Привет! Я Ferixdi AI — наставник по Veo 3.1 и Google Flow.\nВот быстрые подсказки, которые могут помочь:\n" + (suggestions.length ? suggestions.map((s,i)=>`${i+1}. ${s}`).join("\n") : "(пока подсказок нет)");
-      await tgSend(env, chatId, msg);
+      try {
+        const suggestions = (typeof getSuggestions === "function") ? getSuggestions(8).slice(0, 8) : [];
+        const list = (suggestions && suggestions.length)
+          ? suggestions.map((s, i) => `${i + 1}. ${s}`).join("\n")
+          : "1. /help — краткая справка\n2. Задать вопрос по Veo/Google Flow";
+
+        const msg =
+          "Привет! Я Ferixdi AI — наставник по Veo 3.1 и Google Flow.\n" +
+          "Вот быстрые подсказки, которые могут помочь:\n\n" +
+          list +
+          "\n\nЕсли нужно — напиши /help или задай вопрос прямо сейчас.";
+
+        await tgSend(env, chatId, msg);
+      } catch (e) {
+        logger.warn("tg /start handler failed:", String(e));
+      }
       return json({ ok: true });
     }
 
@@ -62,7 +75,12 @@ export async function setTelegramWebhook(env) {
 }
 
 async function tgSend(env, chatId, text) {
-  const url = `https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`;
+  const token = env.TELEGRAM_BOT_TOKEN;
+  if (!token) {
+    logger.warn("tgSend: missing TELEGRAM_BOT_TOKEN");
+    return;
+  }
+  const url = `https://api.telegram.org/bot${token}/sendMessage`;
   try {
     await fetch(url, {
       method: "POST",
