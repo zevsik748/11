@@ -22,8 +22,9 @@ export function extractTextFromAny(data) {
 
   try {
     const s = JSON.stringify(data);
-    const m = s.match(/("content"|"text")\s*:\s*"([^"]+/);
-    if (m && m[2]) return m[2].replace(/\\n/g, "\n");
+    // Исправленное регулярное выражение: захватываем содержимое в кавычках
+    const m = s.match(/(?:(?:"content")|(?:"text"))\s*:\s*"([^"]+)"/);
+    if (m && m[1]) return m[1].replace(/\\n/g, "\n");
   } catch {}
   return "";
 }
